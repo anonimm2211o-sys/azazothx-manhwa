@@ -41,12 +41,11 @@ async function renderReader() {
   if (chapter) {
     chapterIndex = chapters.findIndex(c => c.id === chapter);
   } else {
-    // Tanpa parameter chapter (klik dari homepage) → ambil chapter TERBARU
-    chapterIndex = chapters.length - 1;
+    chapterIndex = 0;
   }
 
-  const currentChapter = chapters[chapterIndex] || chapters[chapters.length - 1];
-  const actualIndex = chapterIndex === -1 ? chapters.length - 1 : chapterIndex;
+  const currentChapter = chapters[chapterIndex] || chapters[0];
+  const actualIndex = chapterIndex === -1 ? 0 : chapterIndex;
 
   document.getElementById("reader-title").innerHTML = `
     ${seriesData.title}
