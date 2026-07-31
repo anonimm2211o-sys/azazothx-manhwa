@@ -1,4 +1,4 @@
-// ===== KONFIGURASI API KOMIK INDONESIA =====
+// ===== KONFIGURASI API =====
 const API_BASE = "https://komiku-api.fly.dev/api/comic";
 
 // ===== DOM ELEMENTS =====
@@ -31,10 +31,11 @@ async function loadSeries(slug) {
   isLoading = true;
   readerChapter.textContent = 'Memuat chapter...';
 
-  // Endpoint info series Komikku API: /info/{slug}
   const data = await fetchAPI(`${API_BASE}/info/${slug}`);
   
-  if (!data || !data.data) {
+  // Periksa berbagai kemungkinan struktur root data dari API
+  const comicData = data?.data || data;
+  if (!comicData) {
     readerChapter.textContent = 'Gagal memuat series';
     readerPages.innerHTML = `
       <div class="page-placeholder">
@@ -46,25 +47,24 @@ async function loadSeries(slug) {
     return;
   }
 
-  const series = data.data;
-  readerTitle.textContent = series.title || 'Tanpa Judul';
+  readerTitle.textContent = comicData.title || comicData.name || 'Tanpa Judul';
 
-  // Ambil daftar chapter dari respons API
-  chapters = series.chapters || series.chapter_list || [];
+  // Tangkap berbagai variasi nama properti list chapter dari response API
+  chapters = comicData.chapters || comicData.chapter_لist || comicData.chapter || comicData.daftar_chapter || [];
   
   if (chapters.length === 0) {
     readerChapter.textContent = 'Tidak ada chapter';
     readerPages.innerHTML = `
       <div class="page-placeholder">
         <div class="glyph">📖</div>
-        <span>Belum ada chapter yang tersedia.</span>
+        <span>Belum ada chapter yang tersedia untuk komik ini.</span>
       </div>
     `;
     isLoading = false;
     return;
   }
 
-  // Sesuaikan urutan chapter (dari awal ke akhir)
+  // Urutkan chapter dari awal ke akhir jika diperlukan
   chapters.reverse();
 
   currentChapterIndex = 0;
@@ -79,7 +79,7 @@ async function openChapter(index) {
 
   isLoading = true;
   const ch = chapters[index];
-  const chTitle = ch.title || `Chapter ${index + 1}`;
+  const chTitle = ch.title || ch.chapter || `Chapter ${index + 1}`;
   readerChapter.textContent = chTitle;
 
   readerPages.innerHTML = `
@@ -91,11 +91,24 @@ async function openChapter(index) {
 
   window.scrollTo(0, 0);
 
-  // Endpoint detail chapter Komikku API: /chapter{endpoint}
   const chapterEndpoint = ch.endpoint || ch.url || ch.link;
-  const data = await fetchAPI(`${API_BASE}/chapter${chapterEndpoint}`);
+  if (!chapterEndpoint) {
+    readerPages.innerHTML = `
+      <div class="page-placeholder">
+        <div class="glyph">❌</div>
+        <span>Endpoint chapter tidak valid.</span>
+      </div>
+    `;
+    isLoading = false;
+    updateNavButtons();
+    return;
+  }
 
-  if (!data || !data.data || !data.data.images) {
+  const data = await fetchAPI(`${API_BASE}/chapter${chapterEndpoint}`);
+  const chapterData = data?.data || data;
+  const images = chapterData?.images || chapterData?.gambar || [];
+
+  if (!images || images.length === 0) {
     readerPages.innerHTML = `
       <div class="page-placeholder">
         <div class="glyph">❌</div>
@@ -107,7 +120,6 @@ async function openChapter(index) {
     return;
   }
 
-  const images = data.data.images;
   renderImages(images);
   updateNavButtons();
   isLoading = false;
