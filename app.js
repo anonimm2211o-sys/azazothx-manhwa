@@ -1,8 +1,5 @@
-// === KONFIGURASI API ===
-// Instance ShineiAPI milik sendiri (bukan server testing developer aslinya)
 const API_BASE = "https://shinei-api.vercel.app/api/v1";
 
-// Daftar slug manhwa yang mau ditampilkan di homepage "Baru Update"
 const FEATURED_SLUGS = [
   "solo-leveling",
   "nano-machine",
@@ -12,8 +9,8 @@ const FEATURED_SLUGS = [
   "the-beginning-after-the-end",
 ];
 
-function renderLoadingState() {
-  const el = document.getElementById("grid-updates");
+function renderLoadingState(targetId) {
+  const el = document.getElementById(targetId);
   el.innerHTML = Array.from({ length: 6 }).map(() => `
     <div class="card">
       <div class="cover">
@@ -44,11 +41,11 @@ async function fetchFeaturedSeries() {
   return results.filter(Boolean);
 }
 
-function renderUpdatesGrid(seriesList) {
-  const el = document.getElementById("grid-updates");
+function renderGrid(targetId, seriesList, emptyMessage) {
+  const el = document.getElementById(targetId);
 
   if (!seriesList || seriesList.length === 0) {
-    el.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">Gagal memuat data. Coba refresh halaman.</div>`;
+    el.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">${emptyMessage}</div>`;
     return;
   }
 
@@ -83,44 +80,79 @@ function attachCardEvents(container) {
 
 function setupBottomNav() {
   const navItems = document.querySelectorAll(".nav-item");
+  const tabPages = {
+    home: document.getElementById("tab-home"),
+    search: document.getElementById("tab-search"),
+    settings: document.getElementById("tab-settings"),
+  };
+
   navItems.forEach(item => {
     item.addEventListener("click", () => {
+      const targetTab = item.dataset.tab;
+
       navItems.forEach(i => i.classList.remove("active"));
       item.classList.add("active");
-      console.log("Tab aktif:", item.dataset.tab);
+
+      Object.keys(tabPages).forEach(key => {
+        if (tabPages[key]) {
+          tabPages[key].style.display = key === targetTab ? "block" : "none";
+        }
+      });
+
+      window.scrollTo(0, 0);
+
+      if (targetTab === "search") {
+        const searchInput = document.getElementById("search-input-tab");
+        if (searchInput) searchInput.focus();
+      }
     });
   });
 }
 
-function setupSearch() {
-  const input = document.querySelector(".search-box input");
+function setupSearchTab() {
+  const input = document.getElementById("search-input-tab");
+  const emptyState = document.getElementById("search-empty");
   if (!input) return;
 
   let debounceTimer;
   input.addEventListener("input", (e) => {
     clearTimeout(debounceTimer);
     const query = e.target.value.trim();
-    if (query.length < 2) return;
+
+    if (query.length < 2) {
+      document.getElementById("grid-search-results").innerHTML = "";
+      if (emptyState) {
+        emptyState.style.display = "block";
+        emptyState.textContent = "Ketik minimal 2 huruf untuk mulai mencari.";
+      }
+      return;
+    }
+
+    if (emptyState) emptyState.style.display = "none";
 
     debounceTimer = setTimeout(async () => {
       try {
         const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
         const json = await res.json();
         if (json.success) {
-          renderUpdatesGrid(json.data);
+          renderGrid("grid-search-results", json.data, "Tidak ada hasil ditemukan.");
         }
       } catch (err) {
         console.error("Search error:", err);
+        if (emptyState) {
+          emptyState.style.display = "block";
+          emptyState.textContent = "Gagal mencari. Coba lagi.";
+        }
       }
     }, 400);
   });
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  renderLoadingState();
+  renderLoadingState("grid-updates");
   setupBottomNav();
-  setupSearch();
+  setupSearchTab();
 
   const seriesList = await fetchFeaturedSeries();
-  renderUpdatesGrid(seriesList);
+  renderGrid("grid-updates", seriesList, "Gagal memuat data. Coba refresh halaman.");
 });
