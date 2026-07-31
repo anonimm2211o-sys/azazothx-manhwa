@@ -1,4 +1,4 @@
-// ===== KONFIGURASI API PRIBADI (DEPLOYMENT VERCEL KAMU) =====
+// ===== KONFIGURASI API PRIBADI =====
 const API_BASE = "https://komiku-rest-api-roan.vercel.app";
 
 // ===== DOM ELEMENTS =====
@@ -16,9 +16,12 @@ let isLoading = false;
 // ===== HELPER FETCH API =====
 async function fetchAPI(url) {
   try {
+    console.log("Fetching URL:", url);
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-    return await res.json();
+    const json = await res.json();
+    console.log("Response JSON:", json);
+    return json;
   } catch (e) {
     console.error('API Fetch Error:', e);
     return null;
@@ -39,7 +42,7 @@ async function loadSeries(slug) {
     readerPages.innerHTML = `
       <div class="page-placeholder">
         <div class="glyph">❌</div>
-        <span>Gagal mengambil data komik dari API pribadi.</span>
+        <span>Gagal mengambil detail komik. Slug: ${slug}</span>
       </div>
     `;
     isLoading = false;
@@ -54,7 +57,7 @@ async function loadSeries(slug) {
     readerPages.innerHTML = `
       <div class="page-placeholder">
         <div class="glyph">📖</div>
-        <span>Belum ada chapter yang tersedia untuk komik ini.</span>
+        <span>Daftar chapter kosong dari API.</span>
       </div>
     `;
     isLoading = false;
@@ -111,7 +114,7 @@ async function openChapter(index) {
     readerPages.innerHTML = `
       <div class="page-placeholder">
         <div class="glyph">❌</div>
-        <span>Gagal memuat gambar halaman chapter.</span>
+        <span>Gagal memuat gambar dari path: ${cleanPath}</span>
       </div>
     `;
     isLoading = false;
