@@ -1,116 +1,215 @@
+// ===== KONFIGURASI =====
 const API_BASE = "https://shinei-api.vercel.app/api/v1";
 
-function getParams() {
-  const params = new URLSearchParams(window.location.search);
-  return {
-    series: params.get("series"),
-    chapter: params.get("chapter"),
-  };
-}
+// ===== DOM =====
+const readerTitle = document.getElementById('reader-title');
+const readerChapter = document.getElementById('reader-chapter');
+const readerPages = document.getElementById('reader-pages');
+const prevBtn = document.getElementById('prev-btn');
+const nextBtn = document.getElementById('next-btn');
 
-async function fetchSeriesWithChapters(slug) {
+// ===== STATE =====
+let seriesSlug = '';
+let seriesData = null;
+let chapters = [];
+let currentChapterIndex = 0;
+let isLoading = false;
+
+// ===== HELPER FETCH =====
+async function fetchAPI(endpoint) {
   try {
-    const res = await fetch(`${API_BASE}/series/${slug}?include=chapters`);
-    const json = await res.json();
-    return json.success ? json.data : null;
-  } catch (err) {
-    console.error("Gagal ambil data series:", err);
+    const res = await fetch(`${API_BASE}${endpoint}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (e) {
+    console.error('API error:', e);
     return null;
   }
 }
 
-async function renderReader() {
-  const { series, chapter } = getParams();
+// ===== AMBIL DATA SERIES + CHAPTER LIST =====
+async function loadSeries(slug) {
+  if (isLoading) return;
+  isLoading = true;
+  readerChapter.textContent = 'Memuat...';
 
-  if (!series) {
-    document.getElementById("reader-title").textContent = "Manhwa tidak ditemukan";
+  // 1. Ambil detail series
+  const data = await fetchAPI(`/komikindo/api/komik/${slug}`);
+  if (!data || !data.data) {
+    readerChapter.textContent = 'Gagal memuat series';
+    isLoading = false;
     return;
   }
 
-  const seriesData = await fetchSeriesWithChapters(series);
+  seriesData = data.data;
+  const title = seriesData.title || seriesData.name || 'Tanpa Judul';
+  readerTitle.textContent = title;
 
-  if (!seriesData) {
-    document.getElementById("reader-title").textContent = "Gagal memuat data";
-    return;
+  // 2. Ambil daftar chapter
+  const chapData = await fetchAPI(`/komikindo/api/chapter/${slug}`);
+  if (chapData && chapData.data) {
+    if (Array.isArray(chapData.data)) {
+      chapters = chapData.data;
+    } else if (chapData.data.chapters && Array.isArray(chapData.data.chapters)) {
+      chapters = chapData.data.chapters;
+    } else {
+      chapters = [chapData.data];
+    }
+  } else {
+    // Fallback: coba ambil dari series object
+    if (seriesData.chapters && Array.isArray(seriesData.chapters)) {
+      chapters = seriesData.chapters;
+    } else if (seriesData.chapter_list && Array.isArray(seriesData.chapter_list)) {
+      chapters = seriesData.chapter_list;
+    } else {
+      chapters = [];
+    }
   }
 
-  const chapters = seriesData.chapters || [];
-  chapters.sort((a, b) => (a.order || 0) - (b.order || 0));
-
-  let chapterIndex;
-  if (chapter) {
-    chapterIndex = chapters.findIndex(c => c.id === chapter);
+  // 3. Buka chapter pertama
+  if (chapters.length > 0) {
+    currentChapterIndex = 0;
+    await openChapter(currentChapterIndex);
   } else {
-    chapterIndex = 0;
-  }
-
-  const currentChapter = chapters[chapterIndex] || chapters[0];
-  const actualIndex = chapterIndex === -1 ? 0 : chapterIndex;
-
-  document.getElementById("reader-title").innerHTML = `
-    ${seriesData.title}
-    <small>${currentChapter ? currentChapter.title : 'Chapter tidak ditemukan'}</small>
-  `;
-
-  const pagesEl = document.getElementById("reader-pages");
-  if (currentChapter && currentChapter.sources && currentChapter.sources.length > 0) {
-    pagesEl.innerHTML = `
-      <div class="page-placeholder" style="aspect-ratio:auto; padding:40px 20px;">
-        <div class="glyph">&#9673;</div>
-        <span style="text-align:center; line-height:1.6;">
-          Chapter ini tersedia di sumber resmi.<br>
-          Silakan buka link di bawah untuk membaca.
-        </span>
-        <a href="${currentChapter.sources[0].url}" target="_blank" rel="noopener"
-           style="margin-top:14px; padding:10px 20px; background:rgba(124,58,237,0.2); border:1px solid var(--violet); border-radius:999px; color:var(--lilac); text-decoration:none; font-size:0.8rem; font-weight:600;">
-          Baca di ${currentChapter.sources[0].name}
-        </a>
-      </div>
-    `;
-  } else if (currentChapter) {
-    pagesEl.innerHTML = `
-      <div class="page-placeholder" style="aspect-ratio:auto; padding:40px 20px;">
-        <div class="glyph">&#9673;</div>
-        <span style="text-align:center; line-height:1.6;">
-          Chapter "${currentChapter.title}" ditemukan, tapi sumber bacanya<br>
-          belum tersedia dari API untuk chapter ini.
-        </span>
-      </div>
-    `;
-  } else {
-    pagesEl.innerHTML = `
+    readerPages.innerHTML = `
       <div class="page-placeholder">
-        <div class="glyph">&#9673;</div>
-        <span>Chapter tidak ditemukan</span>
+        <div class="glyph">📖</div>
+        <span>Belum ada chapter untuk series ini.</span>
       </div>
     `;
+    readerChapter.textContent = 'Tidak ada chapter';
   }
 
-  const prevBtn = document.getElementById("prev-btn");
-  const nextBtn = document.getElementById("next-btn");
-  const prevChapter = chapters[actualIndex - 1];
-  const nextChapter = chapters[actualIndex + 1];
-
-  if (prevChapter) {
-    prevBtn.disabled = false;
-    prevBtn.onclick = () => {
-      window.location.href = `read.html?series=${series}&chapter=${prevChapter.id}`;
-    };
-  } else {
-    prevBtn.disabled = true;
-  }
-
-  if (nextChapter) {
-    nextBtn.disabled = false;
-    nextBtn.onclick = () => {
-      window.location.href = `read.html?series=${series}&chapter=${nextChapter.id}`;
-    };
-  } else {
-    nextBtn.disabled = true;
-    nextBtn.textContent = "Chapter Terakhir";
-  }
-
-  window.scrollTo(0, 0);
+  isLoading = false;
 }
 
-document.addEventListener("DOMContentLoaded", renderReader);
+// ===== BUKA CHAPTER =====
+async function openChapter(index) {
+  if (isLoading) return;
+  if (!chapters || index < 0 || index >= chapters.length) return;
+
+  isLoading = true;
+  const ch = chapters[index];
+  const chId = ch.chapter_id || ch.id || ch.endpoint || ch.slug;
+
+  if (!chId) {
+    readerPages.innerHTML = `
+      <div class="page-placeholder">
+        <div class="glyph">⚠️</div>
+        <span>ID chapter tidak valid.</span>
+      </div>
+    `;
+    isLoading = false;
+    return;
+  }
+
+  const chTitle = ch.chapter_title || ch.title || `Chapter ${ch.chapter || index + 1}`;
+  readerChapter.textContent = chTitle;
+
+  readerPages.innerHTML = `
+    <div class="page-placeholder">
+      <div class="glyph">⏳</div>
+      <span>Memuat halaman chapter...</span>
+    </div>
+  `;
+
+  // Ambil detail chapter
+  const data = await fetchAPI(`/komikindo/api/chapter/${chId}`);
+  if (!data || !data.data) {
+    readerPages.innerHTML = `
+      <div class="page-placeholder">
+        <div class="glyph">❌</div>
+        <span>Gagal memuat chapter.</span>
+      </div>
+    `;
+    isLoading = false;
+    return;
+  }
+
+  const detail = data.data;
+  let images = detail.images || detail.chapter_images || detail.image_list || detail.pages || [];
+
+  if (typeof images === 'string') {
+    try { images = JSON.parse(images); } catch (e) { images = []; }
+  }
+
+  if (!Array.isArray(images) || images.length === 0) {
+    if (detail.img_array && Array.isArray(detail.img_array)) images = detail.img_array;
+    else if (detail.gambar && Array.isArray(detail.gambar)) images = detail.gambar;
+  }
+
+  if (!images || images.length === 0) {
+    readerPages.innerHTML = `
+      <div class="page-placeholder">
+        <div class="glyph">🖼️</div>
+        <span>Tidak ada gambar di chapter ini.</span>
+      </div>
+    `;
+  } else {
+    renderImages(images);
+  }
+
+  updateNavButtons();
+  isLoading = false;
+}
+
+// ===== RENDER GAMBAR =====
+function renderImages(images) {
+  readerPages.innerHTML = '';
+  images.forEach(url => {
+    if (!url || url.trim() === '') return;
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = 'Halaman chapter';
+    img.loading = 'lazy';
+    img.onerror = () => {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'page-placeholder';
+      placeholder.innerHTML = `
+        <div class="glyph">🖼️</div>
+        <span>Gagal memuat gambar</span>
+      `;
+      img.replaceWith(placeholder);
+    };
+    readerPages.appendChild(img);
+  });
+}
+
+// ===== NAVIGASI =====
+function updateNavButtons() {
+  prevBtn.disabled = currentChapterIndex <= 0;
+  nextBtn.disabled = currentChapterIndex >= chapters.length - 1;
+}
+
+prevBtn.addEventListener('click', () => {
+  if (currentChapterIndex > 0) {
+    currentChapterIndex--;
+    openChapter(currentChapterIndex);
+  }
+});
+
+nextBtn.addEventListener('click', () => {
+  if (currentChapterIndex < chapters.length - 1) {
+    currentChapterIndex++;
+    openChapter(currentChapterIndex);
+  }
+});
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get('series');
+  if (slug) {
+    seriesSlug = slug;
+    loadSeries(slug);
+  } else {
+    readerTitle.textContent = 'Series tidak ditemukan';
+    readerChapter.textContent = 'Parameter series hilang';
+    readerPages.innerHTML = `
+      <div class="page-placeholder">
+        <div class="glyph">❌</div>
+        <span>Gagal memuat series. Kembali ke beranda.</span>
+      </div>
+    `;
+  }
+});
