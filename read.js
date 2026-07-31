@@ -35,9 +35,18 @@ async function renderReader() {
   }
 
   const chapters = seriesData.chapters || [];
-  const chapterIndex = chapters.findIndex(c => c.id === chapter);
-  const currentChapter = chapters[chapterIndex] || chapters[0];
-  const actualIndex = chapterIndex === -1 ? 0 : chapterIndex;
+  chapters.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+  let chapterIndex;
+  if (chapter) {
+    chapterIndex = chapters.findIndex(c => c.id === chapter);
+  } else {
+    // Tanpa parameter chapter (klik dari homepage) → ambil chapter TERBARU
+    chapterIndex = chapters.length - 1;
+  }
+
+  const currentChapter = chapters[chapterIndex] || chapters[chapters.length - 1];
+  const actualIndex = chapterIndex === -1 ? chapters.length - 1 : chapterIndex;
 
   document.getElementById("reader-title").innerHTML = `
     ${seriesData.title}
@@ -59,11 +68,21 @@ async function renderReader() {
         </a>
       </div>
     `;
+  } else if (currentChapter) {
+    pagesEl.innerHTML = `
+      <div class="page-placeholder" style="aspect-ratio:auto; padding:40px 20px;">
+        <div class="glyph">&#9673;</div>
+        <span style="text-align:center; line-height:1.6;">
+          Chapter "${currentChapter.title}" ditemukan, tapi sumber bacanya<br>
+          belum tersedia dari API untuk chapter ini.
+        </span>
+      </div>
+    `;
   } else {
     pagesEl.innerHTML = `
       <div class="page-placeholder">
         <div class="glyph">&#9673;</div>
-        <span>Sumber chapter tidak tersedia</span>
+        <span>Chapter tidak ditemukan</span>
       </div>
     `;
   }
