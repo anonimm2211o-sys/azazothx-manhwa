@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Membaca — AZAZOTHX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* Style khusus halaman baca */
+  .reader-top{
+    position:sticky; top:0; z-index:50;
+    display:flex; align-items:center; gap:12px;
+    padding:12px 16px;
+    background:rgba(5,2,16,0.85);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--card-border);
+  }
+  .back-btn{
+    display:flex; align-items:center; justify-content:center;
+    width:32px; height:32px;
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:10px;
+    color:var(--text);
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .back-btn svg{width:16px; height:16px;}
+  .reader-title{
+    flex:1; min-width:0;
+    font-size:0.85rem; font-weight:600;
+    color:var(--text);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .reader-title small{
+    display:block;
+    font-size:0.7rem; font-weight:400;
+    color:var(--text-dim);
+  }
+
+  .reader-pages{
+    max-width:720px; margin:0 auto;
+    padding-bottom:16px;
+  }
+  .reader-pages img{
+    width:100%; display:block;
+  }
+  .page-placeholder{
+    width:100%; aspect-ratio:3/4.4;
+    background:linear-gradient(165deg, #201038 0%, #150c28 100%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:8px;
+    border-bottom:1px solid rgba(255,255,255,0.03);
+  }
+  .page-placeholder span{
+    color:var(--text-dim);
+    font-size:0.75rem;
+  }
+  .page-placeholder .glyph{
+    font-size:1.4rem;
+    color:rgba(192,132,252,0.3);
+  }
+
+  .chapter-nav{
+    display:flex; gap:10px;
+    padding:20px 16px calc(20px + env(safe-area-inset-bottom));
+    max-width:720px; margin:0 auto;
+  }
+  .nav-btn{
+    flex:1;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    padding:14px;
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:14px;
+    color:var(--text);
+    font-size:0.85rem; font-weight:600;
+    cursor:pointer;
+  }
+  .nav-btn:disabled{
+    opacity:0.35; cursor:not-allowed;
+  }
+  .nav-btn.primary{
+    background:rgba(124,58,237,0.16);
+    border-color:var(--violet);
+    color:var(--lilac);
+  }
+  .nav-btn svg{width:16px; height:16px;}
+
+  .end-note{
+    text-align:center;
+    padding:0 20px 30px;
+    font-size:0.75rem;
+    color:var(--text-dim);
+  }
+</style>
+</head>
+<body>
+<div class="stars"></div>
+
+<div class="reader-top">
+  <button class="back-btn" onclick="window.location.href='index.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+  </button>
+  <div class="reader-title" id="reader-title">
+    Judul Manhwa
+    <small id="reader-chapter">Chapter 1</small>
+  </div>
+</div>
+
+<div class="reader-pages" id="reader-pages">
+  <!-- Halaman-halaman chapter di-render di sini lewat read.js -->
+</div>
+
+<div class="chapter-nav">
+  <button class="nav-btn" id="prev-btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+    Sebelumnya
+  </button>
+  <button class="nav-btn primary" id="next-btn">
+    Selanjutnya
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+  </button>
+</div>
+
+<div class="end-note">— Akhir chapter — nikmatin ritualnya bre —</div>
+
+<script src="read.js"></script>
+</body>
+</html>

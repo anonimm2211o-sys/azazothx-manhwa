@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AZAZOTHX — Manhwa Archive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="stars"></div>
+
+<nav class="top-nav">
+  <div class="logo-wrap">
+    <div class="logo-eyes"></div>
+    <div class="logo">azazoth<span>x</span></div>
+    <div class="logo-eyes"></div>
+  </div>
+</nav>
+
+<div class="logo-video-wrap">
+  <video class="logo-video" autoplay muted loop playsinline>
+    <source src="assets/azazothx-loop.webm" type="video/webm">
+  </video>
+</div>
+
+<section class="hero">
+  <div class="eyebrow">Ritual Baca Dimulai</div>
+  <h1>Kumpulan manhwa pilihan, satu <em>portal</em> untuk semua</h1>
+  <p>1000 judul.</p>
+</section>
+
+<div class="search-wrap">
+  <div class="search-box">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    <input type="text" placeholder="Cari judul manhwa...">
+  </div>
+</div>
+
+<div class="section-label"><div class="bar"></div><span>Baru Update</span></div>
+<div class="grid" id="grid-updates"></div>
+
+<div class="footer-note">AZAZOTHX ARCHIVE — dibangun dari bayangan, disimpan di awan ☁<br><a href="policy.html" style="color:var(--lilac-dim);">Kebijakan &amp; Takedown</a></div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-item active" data-tab="home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V9.5z"/></svg>
+    <span>Home</span>
+  </button>
+  <button class="nav-item" data-tab="search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    <span>Cari</span>
+  </button>
+  <button class="nav-item" data-tab="settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span>Setting</span>
+  </button>
+</nav>
+
+<script src="app.js"></script>
+</body>
+</html>
