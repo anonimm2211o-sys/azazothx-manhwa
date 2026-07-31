@@ -1,5 +1,5 @@
-// ===== KONFIGURASI =====
-const API_BASE = "https://shinei-api.vercel.app/api/v1";
+// ===== KONFIGURASI API PRIBADI (DEPLOYMENT VERCEL KAMU) =====
+const API_BASE = "https://komiku-rest-api-roan.vercel.app";
 
 const FEATURED_SLUGS = [
   "solo-leveling",
@@ -23,6 +23,7 @@ const FALLBACK_SERIES = [
 // ===== RENDER LOADING =====
 function renderLoadingState(targetId) {
   const el = document.getElementById(targetId);
+  if (!el) return;
   el.innerHTML = Array.from({ length: 6 }).map(() => `
     <div class="card">
       <div class="cover">
@@ -35,23 +36,14 @@ function renderLoadingState(targetId) {
   `).join("");
 }
 
-// ===== FETCH SERIES (ENDPOINT /series/) =====
+// ===== FETCH SERIES (ENDPOINT /detail-komik/) =====
 async function fetchSeries(slug) {
   try {
-    console.log(`[fetchSeries] Mencoba ambil: ${slug}`);
-    const res = await fetch(`${API_BASE}/series/${slug}`);
-    if (!res.ok) {
-      console.warn(`[fetchSeries] ${slug} → HTTP ${res.status}`);
-      return null;
-    }
+    const res = await fetch(`${API_BASE}/detail-komik/${slug}`);
+    if (!res.ok) return null;
     const json = await res.json();
-    console.log(`[fetchSeries] ${slug} → data:`, json);
-    if (json.success && json.data) {
-      return json.data;
-    } else {
-      console.warn(`[fetchSeries] ${slug} → success false atau data kosong`);
-      return null;
-    }
+    const data = json.data || json;
+    return data ? data : null;
   } catch (err) {
     console.error(`[fetchSeries] ${slug} error:`, err.message);
     return null;
@@ -63,7 +55,6 @@ async function fetchFeaturedSeries() {
   const results = await Promise.all(FEATURED_SLUGS.map(fetchSeries));
   const filtered = results.filter(Boolean);
   if (filtered.length === 0) {
-    console.warn("Semua fetch gagal, pakai fallback data.");
     return FALLBACK_SERIES;
   }
   return filtered;
@@ -72,6 +63,7 @@ async function fetchFeaturedSeries() {
 // ===== RENDER GRID =====
 function renderGrid(targetId, seriesList, emptyMessage) {
   const el = document.getElementById(targetId);
+  if (!el) return;
 
   if (!seriesList || seriesList.length === 0) {
     el.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">${emptyMessage}</div>`;
@@ -82,7 +74,7 @@ function renderGrid(targetId, seriesList, emptyMessage) {
     const cover = s.cover?.small || s.cover?.large || s.thumbnail || s.image || s.cover_url || '';
     const title = s.title || s.name || s.judul || 'Tanpa Judul';
     const type = s.type || s.genre || 'Manhwa';
-    const chapters = s.chapters_count || s.chapter_count || s.total_chapters || '?';
+    const chapters = s.chapters_count || s.chapter_count || s.total_chapters || (s.chapters ? s.chapters.length : '?');
     const rating = s.rating || s.score || '';
     const slug = s.slug || s.id || s.endpoint || '';
 
@@ -92,7 +84,7 @@ function renderGrid(targetId, seriesList, emptyMessage) {
           <img src="${cover}" alt="${title}" loading="lazy"
                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
           <div class="cover-glyph" style="display:none; position:absolute; inset:0; align-items:center; justify-content:center;">◉ ◉</div>
-          <div class="badge">${chapters ? `Ch. ${chapters}` : s.status || ''}</div>
+          <div class="badge">${chapters !== '?' ? `Ch. ${chapters}` : s.status || ''}</div>
         </div>
         <div class="card-body">
           <div class="card-title">${title}</div>
@@ -154,7 +146,7 @@ function setupSearchTab() {
     const query = e.target.value.trim();
 
     if (query.length < 2) {
-      gridResults.innerHTML = "";
+      if (gridResults) gridResults.innerHTML = "";
       if (emptyState) {
         emptyState.style.display = "block";
         emptyState.textContent = "Ketik minimal 2 huruf untuk mulai mencari.";
@@ -166,10 +158,12 @@ function setupSearchTab() {
 
     debounceTimer = setTimeout(async () => {
       try {
-        const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
+        const res = await fetch(`${API_BASE}/search/${encodeURIComponent(query)}`);
         const json = await res.json();
-        if (json.success && json.data) {
-          renderGrid("grid-search-results", json.data, "Tidak ada hasil ditemukan.");
+        const results = json.data || json.results || json;
+        
+        if (Array.isArray(results) && results.length > 0) {
+          renderGrid("grid-search-results", results, "Tidak ada hasil ditemukan.");
         } else {
           renderGrid("grid-search-results", [], "Tidak ada hasil ditemukan.");
         }
