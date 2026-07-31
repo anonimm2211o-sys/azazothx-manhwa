@@ -1,8 +1,8 @@
 // ===== KONFIGURASI =====
 const API_BASE = "https://shinei-api.vercel.app/api/v1";
 
-// Menggunakan public CORS proxy gratis agar frontend bisa langsung scrape situs target
-const CORS_PROXY = "https://api.allorigins.win/raw?url=";
+// Menggunakan proxy alternatif yang lebih longgar untuk bypass CORS
+const CORS_PROXY = "https://api.codetabs.com/v1/proxy?quest=";
 
 // ===== DOM =====
 const readerTitle = document.getElementById('reader-title');
@@ -70,15 +70,13 @@ async function loadSeries(slug) {
   isLoading = false;
 }
 
-// ===== BUKA CHAPTER & SCRAPE GAMBAR LANGSUNG =====
+// ===== BUKA CHAPTER & SCRAPE GAMBAR =====
 async function openChapter(index) {
   if (isLoading) return;
   if (!chapters || index < 0 || index >= chapters.length) return;
 
   isLoading = true;
   const ch = chapters[index];
-  
-  // Ambil URL chapter dari data Shinei API (biasanya berupa link asli situs komik)
   const targetChapterUrl = ch.url || ch.link || ch.endpoint;
 
   const chTitle = ch.title || `Chapter ${ch.order || index + 1}`;
@@ -95,23 +93,26 @@ async function openChapter(index) {
 
   try {
     if (!targetChapterUrl) {
-      throw new Error("URL chapter tidak ditemukan pada data API.");
+      throw new Error("URL chapter tidak ditemukan.");
     }
 
-    // Melakukan scraping langsung via CORS Proxy ke situs target
     const response = await fetch(CORS_PROXY + encodeURIComponent(targetChapterUrl));
     const htmlText = await response.text();
 
-    // Parse HTML menggunakan DOMParser bawaan browser (Tanpa Cheerio/Node.js)
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlText, 'text/html');
 
     const images = [];
-    // Selektor umum pembaca manga/manhwa (ubah sesuai situs sumber target jika perlu)
-    doc.querySelectorAll('.reading-content img, .ts-main-image, #readerarea img, .rdminimal img').forEach(img => {
-      const src = img.getAttribute('src') || img.getAttribute('data-src');
-      if (src && !images.includes(src)) {
-        images.push(src.trim());
+    
+    // Ambil semua tag gambar di halaman lalu filter yang berukuran besar/potensial halaman komik
+    doc.querySelectorAll('img').forEach(img => {
+      const src = img.getAttribute('src') || img.getAttribute('data-src') || img.getAttribute('data-lazy-src');
+      if (src) {
+        const cleanSrc = src.trim();
+        // Hindari ikon kecil, avatar, atau logo situs
+        if (!cleanSrc.includes('logo') && !cleanSrc.includes('icon') && !images.includes(cleanSrc)) {
+          images.push(cleanSrc);
+        }
       }
     });
 
@@ -119,7 +120,7 @@ async function openChapter(index) {
       readerPages.innerHTML = `
         <div class="page-placeholder">
           <div class="glyph">🖼️</div>
-          <span>Gambar chapter tidak ditemukan atau struktur selektor berbeda.</span>
+          <span>Tidak ada gambar yang terdeteksi di halaman ini.</span>
         </div>
       `;
     } else {
@@ -130,7 +131,7 @@ async function openChapter(index) {
     readerPages.innerHTML = `
       <div class="page-placeholder">
         <div class="glyph">❌</div>
-        <span>Gagal memuat gambar chapter secara langsung.</span>
+        <span>Gagal memuat gambar chapter.</span>
       </div>
     `;
   }
