@@ -133,7 +133,7 @@ function setupBottomNav() {
   });
 }
 
-// ===== SEARCH =====
+// ===== SEARCH (Perbaikan Endpoint) =====
 function setupSearchTab() {
   const input = document.getElementById("search-input-tab");
   const emptyState = document.getElementById("search-empty");
@@ -158,7 +158,9 @@ function setupSearchTab() {
 
     debounceTimer = setTimeout(async () => {
       try {
-        const res = await fetch(`${API_BASE}/search/${encodeURIComponent(query)}`);
+        // Menggunakan endpoint pencarian standar VernSG API
+        const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
+        if (!res.ok) throw new Error("Gagal mengambil data pencarian");
         const json = await res.json();
         const results = json.data || json.results || json;
         
@@ -177,6 +179,7 @@ function setupSearchTab() {
     }, 400);
   });
 }
+
 
 // ===== INIT =====
 document.addEventListener("DOMContentLoaded", async () => {
