@@ -1,5 +1,5 @@
-// ===== KONFIGURASI API =====
-const API_BASE = "https://komiku-api.fly.dev/api/comic";
+// ===== KONFIGURASI API PRIBADI (DEPLOYMENT VERCEL KAMU) =====
+const API_BASE = "https://komiku-rest-api-roan.vercel.app";
 
 // ===== DOM ELEMENTS =====
 const readerTitle = document.getElementById('reader-title');
@@ -31,16 +31,15 @@ async function loadSeries(slug) {
   isLoading = true;
   readerChapter.textContent = 'Memuat chapter...';
 
-  const data = await fetchAPI(`${API_BASE}/info/${slug}`);
-  
-  // Periksa berbagai kemungkinan struktur root data dari API
+  const data = await fetchAPI(`${API_BASE}/detail-komik/${slug}`);
   const comicData = data?.data || data;
+  
   if (!comicData) {
     readerChapter.textContent = 'Gagal memuat series';
     readerPages.innerHTML = `
       <div class="page-placeholder">
         <div class="glyph">❌</div>
-        <span>Gagal mengambil data komik dari server API.</span>
+        <span>Gagal mengambil data komik dari API pribadi.</span>
       </div>
     `;
     isLoading = false;
@@ -48,9 +47,7 @@ async function loadSeries(slug) {
   }
 
   readerTitle.textContent = comicData.title || comicData.name || 'Tanpa Judul';
-
-  // Tangkap berbagai variasi nama properti list chapter dari response API
-  chapters = comicData.chapters || comicData.chapter_لist || comicData.chapter || comicData.daftar_chapter || [];
+  chapters = comicData.chapters || comicData.chapter_list || [];
   
   if (chapters.length === 0) {
     readerChapter.textContent = 'Tidak ada chapter';
@@ -64,9 +61,6 @@ async function loadSeries(slug) {
     return;
   }
 
-  // Urutkan chapter dari awal ke akhir jika diperlukan
-  chapters.reverse();
-
   currentChapterIndex = 0;
   await openChapter(currentChapterIndex);
   isLoading = false;
@@ -79,7 +73,7 @@ async function openChapter(index) {
 
   isLoading = true;
   const ch = chapters[index];
-  const chTitle = ch.title || ch.chapter || `Chapter ${index + 1}`;
+  const chTitle = ch.title || ch.name || `Chapter ${index + 1}`;
   readerChapter.textContent = chTitle;
 
   readerPages.innerHTML = `
@@ -91,8 +85,8 @@ async function openChapter(index) {
 
   window.scrollTo(0, 0);
 
-  const chapterEndpoint = ch.endpoint || ch.url || ch.link;
-  if (!chapterEndpoint) {
+  const chapterPath = ch.endpoint || ch.url || ch.slug || ch.link;
+  if (!chapterPath) {
     readerPages.innerHTML = `
       <div class="page-placeholder">
         <div class="glyph">❌</div>
@@ -104,9 +98,14 @@ async function openChapter(index) {
     return;
   }
 
-  const data = await fetchAPI(`${API_BASE}/chapter${chapterEndpoint}`);
+  let cleanPath = chapterPath.replace(/^\/+/g, '');
+  if (cleanPath.startsWith('baca-chapter/')) {
+    cleanPath = cleanPath.replace('baca-chapter/', '');
+  }
+
+  const data = await fetchAPI(`${API_BASE}/baca-chapter/${cleanPath}`);
   const chapterData = data?.data || data;
-  const images = chapterData?.images || chapterData?.gambar || [];
+  const images = chapterData?.images || chapterData?.gambar || chapterData?.chapter_image || [];
 
   if (!images || images.length === 0) {
     readerPages.innerHTML = `
