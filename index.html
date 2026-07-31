@@ -19,31 +19,65 @@
   </div>
 </nav>
 
-<div class="logo-video-wrap">
-  <video class="logo-video" autoplay muted loop playsinline>
-    <source src="assets/azazothx-loop.webm" type="video/webm">
-  </video>
+<div class="tab-page" id="tab-home">
+  <div class="logo-video-wrap">
+    <video class="logo-video" autoplay muted loop playsinline>
+      <source src="assets/azazothx-loop.webm" type="video/webm">
+    </video>
+  </div>
+
+  <section class="hero">
+    <div class="eyebrow">Ritual Baca Dimulai</div>
+    <h1>Kumpulan manhwa pilihan, satu <em>portal</em> untuk semua</h1>
+    <p>1000 judul.</p>
+  </section>
+
+  <div class="section-label"><div class="bar"></div><span>Baru Update</span></div>
+  <div class="grid" id="grid-updates"></div>
+
+  <div class="footer-note">AZAZOTHX ARCHIVE — dibangun dari bayangan, disimpan di awan ☁<br><a href="policy.html" style="color:var(--lilac-dim);">Kebijakan &amp; Takedown</a></div>
 </div>
 
-<section class="hero">
-  <div class="eyebrow">Ritual Baca Dimulai</div>
-  <h1>Kumpulan manhwa pilihan, satu <em>portal</em> untuk semua</h1>
-  <p>1000 judul.</p>
-</section>
+<div class="tab-page" id="tab-search" style="display:none;">
+  <div class="search-wrap" style="padding-top:20px;">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="text" id="search-input-tab" placeholder="Cari judul manhwa...">
+    </div>
+  </div>
+  <div class="section-label"><div class="bar"></div><span>Hasil Pencarian</span></div>
+  <div class="grid" id="grid-search-results"></div>
+  <div class="empty-state" id="search-empty">Ketik minimal 2 huruf untuk mulai mencari.</div>
+</div>
 
-<div class="search-wrap">
-  <div class="search-box">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-    <input type="text" placeholder="Cari judul manhwa...">
+<div class="tab-page" id="tab-settings" style="display:none;">
+  <div class="settings-wrap">
+    <div class="section-label"><div class="bar"></div><span>Tentang</span></div>
+    <div class="settings-card">
+      <div class="settings-row">
+        <span>Nama Situs</span>
+        <span class="settings-value">AZAZOTHX Archive</span>
+      </div>
+      <div class="settings-row">
+        <span>Sumber Data</span>
+        <span class="settings-value">ShineiAPI</span>
+      </div>
+      <div class="settings-row">
+        <span>Versi</span>
+        <span class="settings-value">1.0.0</span>
+      </div>
+    </div>
+
+    <div class="section-label"><div class="bar"></div><span>Tautan</span></div>
+    <div class="settings-card">
+      <a href="policy.html" class="settings-row settings-link">
+        <span>Kebijakan &amp; Takedown</span>
+        <span>&rarr;</span>
+      </a>
+    </div>
   </div>
 </div>
 
-<div class="section-label"><div class="bar"></div><span>Baru Update</span></div>
-<div class="grid" id="grid-updates"></div>
-
-<div class="footer-note">AZAZOTHX ARCHIVE — dibangun dari bayangan, disimpan di awan ☁<br><a href="policy.html" style="color:var(--lilac-dim);">Kebijakan &amp; Takedown</a></div>
-
-<!-- BOTTOM NAV -->
 <nav class="bottom-nav">
   <button class="nav-item active" data-tab="home">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V9.5z"/></svg>
