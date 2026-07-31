@@ -10,14 +10,14 @@ const FEATURED_SLUGS = [
   "the-beginning-after-the-end",
 ];
 
-// ===== FALLBACK DATA (kalo API gagal total) =====
+// ===== FALLBACK DATA =====
 const FALLBACK_SERIES = [
-  { slug: "solo-leveling", title: "Solo Leveling", type: "Manhwa", status: "Completed", rating: "4.9" },
-  { slug: "nano-machine", title: "Nano Machine", type: "Manhwa", status: "Ongoing", rating: "4.8" },
-  { slug: "reincarnator", title: "Reincarnator", type: "Manhwa", status: "Ongoing", rating: "4.7" },
-  { slug: "eleceed", title: "Eleceed", type: "Manhwa", status: "Ongoing", rating: "4.9" },
-  { slug: "omniscient-reader", title: "Omniscient Reader", type: "Manhwa", status: "Completed", rating: "4.9" },
-  { slug: "the-beginning-after-the-end", title: "The Beginning After The End", type: "Manhwa", status: "Ongoing", rating: "4.8" },
+  { slug: "solo-leveling", title: "Solo Leveling", cover: { small: "https://via.placeholder.com/200x300?text=Solo+Leveling" }, type: "Manhwa", status: "Completed", rating: "4.9" },
+  { slug: "nano-machine", title: "Nano Machine", cover: { small: "https://via.placeholder.com/200x300?text=Nano+Machine" }, type: "Manhwa", status: "Ongoing", rating: "4.8" },
+  { slug: "reincarnator", title: "Reincarnator", cover: { small: "https://via.placeholder.com/200x300?text=Reincarnator" }, type: "Manhwa", status: "Ongoing", rating: "4.7" },
+  { slug: "eleceed", title: "Eleceed", cover: { small: "https://via.placeholder.com/200x300?text=Eleceed" }, type: "Manhwa", status: "Ongoing", rating: "4.9" },
+  { slug: "omniscient-reader", title: "Omniscient Reader", cover: { small: "https://via.placeholder.com/200x300?text=Omniscient+Reader" }, type: "Manhwa", status: "Completed", rating: "4.9" },
+  { slug: "the-beginning-after-the-end", title: "The Beginning After The End", cover: { small: "https://via.placeholder.com/200x300?text=TBATE" }, type: "Manhwa", status: "Ongoing", rating: "4.8" },
 ];
 
 // ===== RENDER LOADING =====
@@ -35,34 +35,26 @@ function renderLoadingState(targetId) {
   `).join("");
 }
 
-// ===== FETCH SERIES DENGAN TIMEOUT =====
+// ===== FETCH SERIES (ENDPOINT /series/) =====
 async function fetchSeries(slug) {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000); // timeout 8 detik
-
-    const res = await fetch(`${API_BASE}/komikindo/api/komik/${slug}`, {
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-
+    console.log(`[fetchSeries] Mencoba ambil: ${slug}`);
+    const res = await fetch(`${API_BASE}/series/${slug}`);
     if (!res.ok) {
-      if (res.status === 404) {
-        console.warn(`Series "${slug}" tidak ditemukan.`);
-        return null;
-      }
-      throw new Error(`HTTP ${res.status}`);
+      console.warn(`[fetchSeries] ${slug} → HTTP ${res.status}`);
+      return null;
     }
     const json = await res.json();
-    const data = json.data || json;
-    // Pastikan ada title
-    if (!data.title) data.title = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    return data;
+    console.log(`[fetchSeries] ${slug} → data:`, json);
+    if (json.success && json.data) {
+      return json.data;
+    } else {
+      console.warn(`[fetchSeries] ${slug} → success false atau data kosong`);
+      return null;
+    }
   } catch (err) {
-    console.error(`Error fetch ${slug}:`, err.message);
-    // Kalo error, pake fallback data
-    const fallback = FALLBACK_SERIES.find(s => s.slug === slug);
-    return fallback ? { ...fallback, slug } : null;
+    console.error(`[fetchSeries] ${slug} error:`, err.message);
+    return null;
   }
 }
 
@@ -71,7 +63,6 @@ async function fetchFeaturedSeries() {
   const results = await Promise.all(FEATURED_SLUGS.map(fetchSeries));
   const filtered = results.filter(Boolean);
   if (filtered.length === 0) {
-    // Kalo semua gagal, pake fallback total
     console.warn("Semua fetch gagal, pakai fallback data.");
     return FALLBACK_SERIES;
   }
@@ -89,13 +80,14 @@ function renderGrid(targetId, seriesList, emptyMessage) {
 
   el.innerHTML = seriesList.map(s => {
     const cover = s.cover?.small || s.cover?.large || s.thumbnail || s.image || s.cover_url || '';
-    const title = s.title || s.name || 'Tanpa Judul';
+    const title = s.title || s.name || s.judul || 'Tanpa Judul';
     const type = s.type || s.genre || 'Manhwa';
     const chapters = s.chapters_count || s.chapter_count || s.total_chapters || '?';
     const rating = s.rating || s.score || '';
+    const slug = s.slug || s.id || s.endpoint || '';
 
     return `
-      <div class="card" data-series-slug="${s.slug || s.id || s.endpoint || ''}" data-series-title="${title}">
+      <div class="card" data-series-slug="${slug}" data-series-title="${title}">
         <div class="cover">
           <img src="${cover}" alt="${title}" loading="lazy"
                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
@@ -116,8 +108,6 @@ function renderGrid(targetId, seriesList, emptyMessage) {
 // ===== ATTACH CLICK EVENT =====
 function attachCardEvents(container) {
   container.querySelectorAll(".card[data-series-slug]").forEach(card => {
-    card.addEventListener("touchstart", () => card.classList.add("hovered"));
-    card.addEventListener("touchend", () => setTimeout(() => card.classList.remove("hovered"), 250));
     card.addEventListener("click", () => {
       const slug = card.dataset.seriesSlug;
       if (slug) {
@@ -129,12 +119,69 @@ function attachCardEvents(container) {
 
 // ===== BOTTOM NAV =====
 function setupBottomNav() {
-  // ... (sama seperti sebelumnya)
+  const navItems = document.querySelectorAll(".nav-item");
+  const tabPages = {
+    home: document.getElementById("tab-home"),
+    search: document.getElementById("tab-search"),
+    settings: document.getElementById("tab-settings"),
+  };
+
+  navItems.forEach(item => {
+    item.addEventListener("click", () => {
+      const targetTab = item.dataset.tab;
+      navItems.forEach(i => i.classList.remove("active"));
+      item.classList.add("active");
+      Object.keys(tabPages).forEach(key => {
+        if (tabPages[key]) {
+          tabPages[key].style.display = key === targetTab ? "block" : "none";
+        }
+      });
+      window.scrollTo(0, 0);
+    });
+  });
 }
 
 // ===== SEARCH =====
 function setupSearchTab() {
-  // ... (sama seperti sebelumnya)
+  const input = document.getElementById("search-input-tab");
+  const emptyState = document.getElementById("search-empty");
+  const gridResults = document.getElementById("grid-search-results");
+  if (!input) return;
+
+  let debounceTimer;
+  input.addEventListener("input", (e) => {
+    clearTimeout(debounceTimer);
+    const query = e.target.value.trim();
+
+    if (query.length < 2) {
+      gridResults.innerHTML = "";
+      if (emptyState) {
+        emptyState.style.display = "block";
+        emptyState.textContent = "Ketik minimal 2 huruf untuk mulai mencari.";
+      }
+      return;
+    }
+
+    if (emptyState) emptyState.style.display = "none";
+
+    debounceTimer = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
+        const json = await res.json();
+        if (json.success && json.data) {
+          renderGrid("grid-search-results", json.data, "Tidak ada hasil ditemukan.");
+        } else {
+          renderGrid("grid-search-results", [], "Tidak ada hasil ditemukan.");
+        }
+      } catch (err) {
+        console.error("Search error:", err);
+        if (emptyState) {
+          emptyState.style.display = "block";
+          emptyState.textContent = "Gagal mencari. Coba lagi.";
+        }
+      }
+    }, 400);
+  });
 }
 
 // ===== INIT =====
