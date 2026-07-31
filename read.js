@@ -9,8 +9,6 @@ const prevBtn = document.getElementById('prev-btn');
 const nextBtn = document.getElementById('next-btn');
 
 // ===== STATE =====
-let seriesSlug = '';
-let seriesData = null;
 let chapters = [];
 let currentChapterIndex = 0;
 let isLoading = false;
@@ -18,68 +16,61 @@ let isLoading = false;
 // ===== HELPER FETCH =====
 async function fetchAPI(endpoint) {
   try {
+    console.log(`[fetchAPI] Mencoba: ${endpoint}`);
     const res = await fetch(`${API_BASE}${endpoint}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
+    const json = await res.json();
+    console.log(`[fetchAPI] Response:`, json);
+    return json;
   } catch (e) {
     console.error('API error:', e);
     return null;
   }
 }
 
-// ===== AMBIL DATA SERIES + CHAPTER LIST =====
+// ===== AMBIL SERIES + CHAPTER LIST =====
 async function loadSeries(slug) {
   if (isLoading) return;
   isLoading = true;
   readerChapter.textContent = 'Memuat...';
 
-  // 1. Ambil detail series
-  const data = await fetchAPI(`/komikindo/api/komik/${slug}`);
+  // Ambil data series dengan include chapters
+  const data = await fetchAPI(`/series/${slug}?include=chapters`);
   if (!data || !data.data) {
     readerChapter.textContent = 'Gagal memuat series';
+    readerPages.innerHTML = `
+      <div class="page-placeholder">
+        <div class="glyph">❌</div>
+        <span>Gagal memuat data series. Pastikan slug benar.</span>
+      </div>
+    `;
     isLoading = false;
     return;
   }
 
-  seriesData = data.data;
-  const title = seriesData.title || seriesData.name || 'Tanpa Judul';
-  readerTitle.textContent = title;
+  const series = data.data;
+  readerTitle.textContent = series.title || series.name || 'Tanpa Judul';
 
-  // 2. Ambil daftar chapter
-  const chapData = await fetchAPI(`/komikindo/api/chapter/${slug}`);
-  if (chapData && chapData.data) {
-    if (Array.isArray(chapData.data)) {
-      chapters = chapData.data;
-    } else if (chapData.data.chapters && Array.isArray(chapData.data.chapters)) {
-      chapters = chapData.data.chapters;
-    } else {
-      chapters = [chapData.data];
-    }
-  } else {
-    // Fallback: coba ambil dari series object
-    if (seriesData.chapters && Array.isArray(seriesData.chapters)) {
-      chapters = seriesData.chapters;
-    } else if (seriesData.chapter_list && Array.isArray(seriesData.chapter_list)) {
-      chapters = seriesData.chapter_list;
-    } else {
-      chapters = [];
-    }
-  }
-
-  // 3. Buka chapter pertama
-  if (chapters.length > 0) {
-    currentChapterIndex = 0;
-    await openChapter(currentChapterIndex);
-  } else {
+  // Ambil chapters
+  chapters = series.chapters || [];
+  if (chapters.length === 0) {
+    readerChapter.textContent = 'Tidak ada chapter';
     readerPages.innerHTML = `
       <div class="page-placeholder">
         <div class="glyph">📖</div>
         <span>Belum ada chapter untuk series ini.</span>
       </div>
     `;
-    readerChapter.textContent = 'Tidak ada chapter';
+    isLoading = false;
+    return;
   }
 
+  // Urutkan chapter berdasarkan order
+  chapters.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+  // Buka chapter pertama
+  currentChapterIndex = 0;
+  await openChapter(currentChapterIndex);
   isLoading = false;
 }
 
@@ -90,7 +81,7 @@ async function openChapter(index) {
 
   isLoading = true;
   const ch = chapters[index];
-  const chId = ch.chapter_id || ch.id || ch.endpoint || ch.slug;
+  const chId = ch.id || ch.chapter_id || ch.slug;
 
   if (!chId) {
     readerPages.innerHTML = `
@@ -103,7 +94,7 @@ async function openChapter(index) {
     return;
   }
 
-  const chTitle = ch.chapter_title || ch.title || `Chapter ${ch.chapter || index + 1}`;
+  const chTitle = ch.title || `Chapter ${ch.order || index + 1}`;
   readerChapter.textContent = chTitle;
 
   readerPages.innerHTML = `
@@ -114,7 +105,7 @@ async function openChapter(index) {
   `;
 
   // Ambil detail chapter
-  const data = await fetchAPI(`/komikindo/api/chapter/${chId}`);
+  const data = await fetchAPI(`/chapter/${chId}`);
   if (!data || !data.data) {
     readerPages.innerHTML = `
       <div class="page-placeholder">
@@ -127,15 +118,10 @@ async function openChapter(index) {
   }
 
   const detail = data.data;
-  let images = detail.images || detail.chapter_images || detail.image_list || detail.pages || [];
+  let images = detail.images || detail.pages || detail.image_list || [];
 
   if (typeof images === 'string') {
     try { images = JSON.parse(images); } catch (e) { images = []; }
-  }
-
-  if (!Array.isArray(images) || images.length === 0) {
-    if (detail.img_array && Array.isArray(detail.img_array)) images = detail.img_array;
-    else if (detail.gambar && Array.isArray(detail.gambar)) images = detail.gambar;
   }
 
   if (!images || images.length === 0) {
@@ -200,7 +186,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(window.location.search);
   const slug = params.get('series');
   if (slug) {
-    seriesSlug = slug;
     loadSeries(slug);
   } else {
     readerTitle.textContent = 'Series tidak ditemukan';
